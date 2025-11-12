@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Schüler Anmeldung</title>
+  <style>
+    :root{--bg:#f3f4f6;--white:#fff;--gray:#6b7280;--gray-light:#e5e7eb;
+      --gray-dark:#374151;--green:#10b981;--green-dark:#059669;--error:#dc2626;
+      --shadow:0 6px 16px rgba(0,0,0,.06);--radius:12px;}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--gray-dark);min-height:100vh;display:flex;flex-direction:column}
+    header{background:var(--white);height:3cm;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;padding:0 30px}
+    header .title-block{display:flex;flex-direction:column}
+    header .title-block h1{font-size:1.4rem;font-weight:800;margin-bottom:2px}
+    header .title-block span{font-size:.9rem;color:var(--gray)}
+    header .header-actions{display:flex;align-items:center;gap:16px}
+    header img{height:40px;object-fit:contain}
+    .register-btn{
+      border:1px solid var(--green);
+      background:transparent;
+      color:var(--green);
+      font-weight:600;
+      padding:8px 14px;
+      border-radius:999px;
+      text-decoration:none;
+      transition:background .15s,color .15s,box-shadow .15s;
+    }
+    .register-btn:hover{
+      background:rgba(16,185,129,.1);
+      box-shadow:0 0 0 3px rgba(16,185,129,.12);
+    }
+    main{flex:1;display:flex;justify-content:center;padding:30px}
+    .card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:26px;width:100%;max-width:680px}
+    h2{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:18px}
+    form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field--full{grid-column:1 / -1}
+    label{font-size:.9rem;color:var(--gray)}
+    input,select{appearance:none;width:100%;border:1px solid var(--gray-light);border-radius:10px;padding:10px 12px;font-size:1rem;outline:none;transition:border .15s,box-shadow .15s}
+    input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+    .actions{grid-column:1 / -1;display:flex;justify-content:center;margin-top:6px}
+    .btn{border:none;border-radius:10px;padding:10px 14px;font-weight:700;font-size:1rem;cursor:pointer;transition:background .15s;color:#fff;background:var(--green)}
+    .btn:hover{background:var(--green-dark)}
+    #message{grid-column:1 / -1;font-size:.95rem;margin-top:12px;text-align:center;font-weight:600}
+    .msg-ok{color:var(--green-dark)} .msg-err{color:var(--error)}
+    @media(max-width:720px){form{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-block">
+      <h1>Schüler Anmeldung</h1>
+      <span>Bitte fülle alle Felder vollständig aus.</span>
+    </div>
+    <div class="header-actions">
+      <a class="register-btn" href="registration.html">Zur Registrierung</a>
+      <img src="assets/boost-logo.png" alt="Boost Logo">
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Registrierung</h2>
+      <form id="registrationForm" novalidate>
+        <div class="field">
+          <label for="vorname">Vorname</label>
+          <input id="vorname" name="vorname" type="text" placeholder="z. B. Alex" required />
+        </div>
+        <div class="field">
+          <label for="nachname">Nachname</label>
+          <input id="nachname" name="nachname" type="text" placeholder="z. B. Huber" required />
+        </div>
+        <div class="field field--full">
+          <label for="schule">Schule</label>
+          <input id="schule" name="schule" type="text" placeholder="z. B. MS Wiener Neustadt" required />
+        </div>
+        <div class="field">
+          <label for="schulform">Schulform</label>
+          <select id="schulform" name="schulform" required>
+            <option value="">-- Bitte wählen --</option>
+            <option value="AHS">AHS</option>
+            <option value="NMS">NMS</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="klasse">Klasse</label>
+          <input id="klasse" name="klasse" type="text" placeholder="z. B. 5A oder 10" required />
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn">Anmelden</button>
+        </div>
+
+        <div id="message" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("registrationForm");
+    const messageEl = document.getElementById("message");
+
+    function showMessage(msg, ok = true) {
+      messageEl.textContent = msg;
+      messageEl.className = ok ? "msg-ok" : "msg-err";
+    }
+
+    async function submitRegistration(payload) {
+      const endpoints = ["/register", "Backend/api/save_registration.php"];
+      let lastError = null;
+
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || (data && data.success !== true && data.ok !== true)) {
+            // allow retry on missing route
+            if (res.status === 404 || res.status === 405) throw { retry: true };
+            throw new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
+          }
+          return data;
+        } catch (err) {
+          if (err && err.retry) {
+            lastError = new Error(`Endpoint ${url} nicht verfügbar`);
+            continue;
+          }
+          lastError = err instanceof Error ? err : new Error(String(err));
+        }
+      }
+      throw lastError || new Error("Registrierung fehlgeschlagen");
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const fields = ["vorname","nachname","schule","schulform","klasse"];
+      let valid = true;
+      const payload = {};
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        const v = el.value.trim();
+        if (!v) { valid = false; el.style.borderColor = "#dc2626"; }
+        else { el.style.borderColor = "#e5e7eb"; payload[id] = v; }
+      });
+      if (!valid) {
+        showMessage("Bitte fülle alle Felder aus, bevor du fortfährst.", false);
+        return;
+      }
+
+      // an Server schicken
+      try {
+        await submitRegistration(payload);
+      } catch (err) {
+        showMessage("Serverfehler: " + (err?.message || err), false);
+        return;
+      }
+
+      // lokal (für Anzeige in der Challenge-Seite)
+      localStorage.setItem("user_name", payload.vorname);
+      localStorage.setItem("last_name", payload.nachname);
+      localStorage.setItem("school_name", payload.schule);
+      localStorage.setItem("school_type", payload.schulform);
+      localStorage.setItem("class", payload.klasse);
+      if (!localStorage.getItem("flash_total")) {
+        localStorage.setItem("flash_total", "0");
+      }
+
+      showMessage("Anmeldung erfolgreich! Du wirst weitergeleitet...", true);
+      setTimeout(() => { window.location.href = "home.html"; }, 800);
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tägliche Challenge</title>
+
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --white: #fff;
+      --gray: #6b7280;
+      --gray-light: #e5e7eb;
+      --gray-dark: #374151;
+      --emerald: #10b981;
+      --emerald-dark: #059669;
+      --shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--gray-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dashboard-header {
+      background: var(--white);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      width: min(100% - 40px, 1100px);
+      margin: 24px auto 10px;
+      padding: 20px 30px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .header-info {
+      flex: 1 1 320px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--emerald);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      background: rgba(16, 185, 129, 0.12);
+      padding: 6px 12px;
+      border-radius: 999px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .header-info .back-button {
+      margin-top: 10px;
+    }
+
+    .back-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .back-button:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
+
+    .school-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--gray);
+    }
+
+    .name-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .user-name {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gray-dark);
+    }
+
+    .flash-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ecfccb;
+      color: #16a34a;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .flash-pill img {
+      width: 20px;
+      height: 20px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-actions img {
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: none;
+      color: var(--gray);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .logout-btn:hover {
+      color: var(--gray-dark);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    section.card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      max-width: 900px;
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gray-dark);
+      margin-bottom: 20px;
+    }
+
+    .challenge-img {
+      width: 100%;
+      max-width: 500px;
+      border-radius: var(--radius);
+      margin: 0 auto 25px auto;
+      display: block;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .exercise-btn {
+      padding: 10px 18px;
+      background: var(--gray-light);
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      color: var(--gray-dark);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      text-decoration: none;
+    }
+
+    .exercise-btn:hover {
+      background: var(--emerald);
+      color: #fff;
+    }
+
+    p.motivation {
+      color: var(--gray-dark);
+      margin-bottom: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid var(--gray-light);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--gray-dark);
+    }
+
+    td img {
+      height: 24px;
+      width: 24px;
+      vertical-align: middle;
+    }
+
+    h2 {
+      color: var(--emerald);
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header class="dashboard-header">
+    <div class="header-info">
+      <div class="header-top">
+        <span id="school-name" class="school-label">Schulname</span>
+      </div>
+      <div class="name-row">
+        <div id="user-name" class="user-name">Vorname</div>
+        <div class="flash-pill">
+          <img src="assets/flash.png" alt="Blitz Symbol">
+          <span id="flash-count">0</span>
+        </div>
+      </div>
+      <a href="home.html" class="back-button">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+        Zurueck
+      </a>
+    </div>
+    <div class="header-actions">
+      <img src="assets/boost-logo.png" alt="Boost Logo">
+      <button type="button" class="logout-btn" aria-label="Abmelden">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l4.5 3-4.5 3M16.5 12H3" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <section class="card">
+      <h1>Tägliche Challenge</h1>
+      <img src="assets/challenge-daily.jpg" alt="Challenge Daily Bild" class="challenge-img" />
+
+      <!-- Buttons -->
+      <div class="button-group">
+        <a href="pushupcounter.html" class="exercise-btn">Push-ups</a>
+        <a href="squats.html" class="exercise-btn">Squats</a>
+        <a href="planks.html" class="exercise-btn">Planks</a>
+        <a href="situps.html" class="exercise-btn">Sit-ups</a>
+        <a href="jumpingjacks.html" class="exercise-btn">Jumping Jacks</a>
+      </div>
+
+      <p class="motivation">Absolviere deine tägliche Bewegungsaufgabe und bleib aktiv!</p>
+
+      <!-- Ergebnisse -->
+      <div>
+        <h2>Ergebnisse</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Übung</th>
+              <th>Vorgaben</th>
+              <th>Ergebnis</th>
+              <th>Flash</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Push-ups</td>
+              <td>10</td>
+              <td id="res-pushups"></td>
+              <td id="flash-pushups"></td>
+            </tr>
+            <tr>
+              <td>Squats</td>
+              <td>20</td>
+              <td id="res-squats"></td>
+              <td id="flash-squats"></td>
+            </tr>
+            <tr>
+              <td>Planks (Sek.)</td>
+              <td>15</td>
+              <td id="res-planks"></td>
+              <td id="flash-planks"></td>
+            </tr>
+            <tr>
+              <td>Sit-ups</td>
+              <td>15</td>
+              <td id="res-situps"></td>
+              <td id="flash-situps"></td>
+            </tr>
+            <tr>
+              <td>Jumping Jacks</td>
+              <td>30</td>
+              <td id="res-jumpingjacks"></td>
+              <td id="flash-jumpingjacks"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- SCRIPT -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const exercises = [
+        { key: "pushups", goal: 10 },
+        { key: "squats", goal: 20 },
+        { key: "planks", goal: 15 },
+        { key: "situps", goal: 15 },
+        { key: "jumpingjacks", goal: 30 }
+      ];
+
+      exercises.forEach(ex => {
+        const result = parseInt(localStorage.getItem(`${ex.key}_total`)) || 0;
+        const resCell = document.getElementById(`res-${ex.key}`);
+        const flashCell = document.getElementById(`flash-${ex.key}`);
+
+        if (resCell) resCell.textContent = result;
+
+        if (result >= ex.goal) {
+          flashCell.innerHTML =
+            '<img src="assets/flash.png" alt="Flash Icon" />';
+        } else {
+          flashCell.textContent = "-";
+        }
+      });
+
+      const userName = localStorage.getItem("user_name") || "Rafaela";
+      const schoolName = localStorage.getItem("school_name") || "Ursulinen - Admin";
+      const flashCount = localStorage.getItem("flash_total") || 0;
+
+      const nameEl = document.getElementById("user-name");
+      const schoolEl = document.getElementById("school-name");
+      const flashEl = document.getElementById("flash-count");
+
+      if (nameEl) {
+        const firstName = userName.trim().split(/\s+/)[0] || userName;
+        nameEl.textContent = firstName;
+      }
+
+      if (schoolEl) schoolEl.textContent = schoolName;
+      if (flashEl) flashEl.textContent = flashCount;
+    });
+  </script>
+</body>
+</html>
+
+

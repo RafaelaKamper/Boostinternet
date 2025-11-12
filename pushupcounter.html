@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Push-up Counter</title>
+
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --gray: #6b7280;
+      --gray-dark: #4b5563;
+      --green: #10b981;
+      --green-dark: #059669;
+      --yellow: #f59e0b;
+      --shadow: 0 6px 16px rgba(0,0,0,.06);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .container { width: 100%; max-width: 950px; }
+
+    .title {
+      text-align: center;
+      font-weight: 800;
+      font-size: 1.8rem;
+      color: #111;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .loader-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--muted);
+      gap: 10px;
+    }
+    .loader {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 5px solid #e5e7eb; border-top-color: var(--green);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #1f2937;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    #canvas  { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+
+    .panel {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .panel h2 {
+      font-size: 1.1rem; font-weight: 700; color: var(--gray-dark);
+      margin-bottom: 10px; text-align: center;
+    }
+    .stat { margin-bottom: 10px; text-align: center; }
+    .label { font-size: 0.85rem; color: var(--muted); }
+    .value { font-size: 2.5rem; font-weight: 800; color: var(--green); } /* Zähler grün */
+    .value-stage { font-size: 1.4rem; color: var(--yellow); font-weight: 700; text-transform: uppercase; }
+    .feedback { min-height: 24px; font-size: 0.9rem; color: var(--gray-dark); font-weight: 600; text-align: center; margin-top: 6px; }
+
+    .btn {
+      width: 100%; border: none; border-radius: 8px; padding: 8px;
+      font-weight: 700; cursor: pointer; font-size: 0.9rem;
+      background: var(--gray); color: white;
+      transition: background .15s ease, transform .1s ease;
+      margin-top: 8px;
+    }
+    .btn:hover { background: var(--gray-dark); }
+    .btn:active { transform: translateY(1px); }
+    .btn--green { background: var(--green); }
+    .btn--green:hover { background: var(--green-dark); }
+
+    .debug { font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 6px; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 class="title">AI Push-up Counter</h1>
+    <p class="subtitle">Get into a push-up position in front of the camera.</p>
+
+    <div class="card">
+      <!-- Loading -->
+      <div id="loading" class="loader-wrap">
+        <div class="loader"></div>
+        <div>
+          <div id="loading-message"><strong>Loading AI model…</strong></div>
+          <div class="debug" id="backend-info"></div>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div id="main-content" style="display:none;">
+        <div class="layout">
+          <!-- Camera & Canvas -->
+          <div class="stage" id="canvas-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+          </div>
+
+          <!-- Status -->
+          <div class="panel">
+            <h2>Status</h2>
+
+            <div class="stat">
+              <p class="label">Count</p>
+              <p id="count" class="value">0</p>
+            </div>
+
+            <div class="stat">
+              <p class="label">Stage</p>
+              <p id="stage" class="value-stage">-</p>
+            </div>
+
+            <div class="stat">
+              <p class="label">Feedback</p>
+              <p id="feedback" class="feedback">Preparing camera...</p>
+            </div>
+
+            <button id="reset-button" class="btn">Reset</button>
+            <button id="finish-button" class="btn btn--green">Fertig</button>
+
+            <p id="backend-info" class="debug"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TFJS & Pose Detection -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+  <script>
+    // DOM
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const countEl = document.getElementById('count');
+    const stageEl = document.getElementById('stage');
+    const feedbackEl = document.getElementById('feedback');
+    const loadingEl = document.getElementById('loading');
+    const loadingMessageEl = document.getElementById('loading-message');
+    const mainContentEl = document.getElementById('main-content');
+    const resetButton = document.getElementById('reset-button');
+    const finishButton = document.getElementById('finish-button');
+    const canvasContainer = document.getElementById('canvas-container');
+    const backendInfo = document.getElementById('backend-info');
+
+    let detector;
+    let counter = 0;
+    let stage = 'up';
+
+    function calculateAngle(a, b, c) {
+      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs(radians * 180.0 / Math.PI);
+      if (angle > 180.0) angle = 360 - angle;
+      return angle;
+    }
+
+    async function setupCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Camera not supported by this browser.');
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+      video.srcObject = stream;
+      return new Promise(resolve => video.onloadedmetadata = () => resolve(video));
+    }
+
+    async function initBackend() {
+      try {
+        await tf.setBackend('webgl');
+        await tf.ready();
+      } catch (e1) {
+        console.warn('WebGL backend failed:', e1);
+        await tf.setBackend('cpu');
+        await tf.ready();
+      }
+      backendInfo.textContent = 'TFJS Backend: ' + tf.getBackend();
+      console.log('TFJS Backend:', tf.getBackend());
+    }
+
+    async function loadModel() {
+      const model = poseDetection.SupportedModels.MoveNet;
+      const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+      detector = await poseDetection.createDetector(model, detectorConfig);
+    }
+
+    async function detectPose() {
+      if (detector && video.readyState === 4) {
+        let poses = [];
+        try {
+          poses = await detector.estimatePoses(video);
+        } catch (error) {
+          console.error(error);
+          feedbackEl.textContent = 'Model error: ' + error.message;
+          feedbackEl.style.color = 'crimson';
+          requestAnimationFrame(detectPose);
+          return;
+        }
+
+        drawCanvas();
+        if (poses.length > 0) {
+          processPushup(poses[0]);
+          drawKeypoints(poses[0]);
+          drawSkeleton(poses[0]);
+        }
+      }
+      requestAnimationFrame(detectPose);
+    }
+
+    function drawCanvas() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+
+    function drawKeypoints(pose) {
+      for (const k of pose.keypoints) {
+        if (k.score > 0.5) {
+          ctx.beginPath();
+          ctx.arc(k.x, k.y, 4, 0, 2 * Math.PI);
+          ctx.fillStyle = '#6b7280';
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawSkeleton(pose) {
+      const adjacent = poseDetection.util.getAdjacentPairs(poseDetection.SupportedModels.MoveNet);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#6b7280';
+      adjacent.forEach(([i, j]) => {
+        const a = pose.keypoints[i], b = pose.keypoints[j];
+        if (a.score > 0.5 && b.score > 0.5) {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      });
+    }
+
+    function processPushup(pose) {
+      const kps = pose.keypoints;
+      const ls = kps.find(k => k.name === 'left_shoulder');
+      const le = kps.find(k => k.name === 'left_elbow');
+      const lw = kps.find(k => k.name === 'left_wrist');
+      const rs = kps.find(k => k.name === 'right_shoulder');
+      const re = kps.find(k => k.name === 'right_elbow');
+      const rw = kps.find(k => k.name === 'right_wrist');
+
+      if (ls?.score > 0.5 && rs?.score > 0.5) {
+        feedbackEl.textContent = 'Please turn your body sideways to the camera.';
+        feedbackEl.style.color = '#b45309'; // gelblich
+        return;
+      }
+
+      let shoulder, elbow, wrist;
+      if ((ls?.score || 0) > (rs?.score || 0)) { shoulder = ls; elbow = le; wrist = lw; }
+      else { shoulder = rs; elbow = re; wrist = rw; }
+
+      if (shoulder?.score > 0.5 && elbow?.score > 0.5 && wrist?.score > 0.5) {
+        const angle = calculateAngle(shoulder, elbow, wrist);
+        if (angle > 160) {
+          if (stage === 'down') {
+            counter++;
+            feedbackEl.textContent = 'Nice!';
+            feedbackEl.style.color = '#059669';
+          }
+          stage = 'up';
+        } else if (angle < 90) {
+          if (stage === 'up') {
+            feedbackEl.textContent = 'Go lower!';
+            feedbackEl.style.color = '#374151';
+          }
+          stage = 'down';
+        }
+        countEl.textContent = counter;
+        stageEl.textContent = stage;
+      } else {
+        feedbackEl.textContent = 'Make sure your shoulder, elbow, and wrist are visible.';
+        feedbackEl.style.color = '#b45309';
+      }
+    }
+
+    // Buttons
+    resetButton.addEventListener('click', () => {
+      counter = 0;
+      stage = 'up';
+      countEl.textContent = counter;
+      stageEl.textContent = '-';
+      feedbackEl.textContent = 'Counter has been reset.';
+      feedbackEl.style.color = '#374151';
+    });
+
+    finishButton.addEventListener('click', () => {
+      localStorage.setItem("pushups_total", counter);
+      window.location.href = "dailychallenge.html";
+    });
+
+    // Responsives Canvas (hält 4:3)
+    function resizeCanvas() {
+      const w = canvasContainer.clientWidth;
+      const r = 4 / 3;
+      canvasContainer.style.height = `${w / r}px`;
+    }
+
+    async function main() {
+      try {
+        await initBackend();
+        loadingMessageEl.textContent = 'Please allow camera access...';
+        await setupCamera();
+        await loadModel();
+      } catch (e) {
+        loadingMessageEl.textContent = `Error: ${e.message}`;
+        loadingMessageEl.style.color = 'red';
+        console.error(e);
+        return;
+      }
+
+      loadingEl.style.display = 'none';
+      mainContentEl.style.display = 'block';
+      feedbackEl.textContent = 'Ready!';
+      feedbackEl.style.color = '#059669';
+
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      detectPose();
+    }
+
+    main();
+  </script>
+</body>
+</html>
+

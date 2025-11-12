@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Squat Counter</title>
+
+  <style>
+    :root{
+      --bg:#f3f4f6; --card:#fff; --text:#111827; --muted:#6b7280;
+      --gray:#6b7280; --gray-dark:#4b5563;
+      --green:#10b981; --green-dark:#059669; --yellow:#f59e0b;
+      --shadow:0 6px 16px rgba(0,0,0,.06); --radius:12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg); color:var(--text); min-height:100vh;
+      display:flex; align-items:center; justify-content:center; padding:12px;
+    }
+    .container{width:100%; max-width:950px;}
+    .title{ text-align:center; font-weight:800; font-size:1.8rem; margin-bottom:4px; }
+    .subtitle{ text-align:center; color:var(--muted); font-size:.95rem; margin-bottom:16px; }
+
+    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; }
+
+    .loader-wrap{ display:flex; align-items:center; justify-content:center; height:200px; gap:10px; color:var(--muted); }
+    .loader{ width:36px;height:36px;border-radius:50%;border:5px solid #e5e7eb;border-top-color:var(--green);animation:spin 1s linear infinite;}
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    .layout{ display:grid; grid-template-columns:1fr 260px; gap:16px; align-items:start; }
+    @media (max-width:800px){ .layout{ grid-template-columns:1fr; } }
+
+    .stage{ position:relative; width:100%; aspect-ratio:4/3; background:#1f2937; border-radius:8px; overflow:hidden; box-shadow:var(--shadow); }
+    #webcam{ width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+    #canvas{ position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); }
+
+    .panel{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; }
+    .panel h2{ font-size:1.1rem; font-weight:700; color:var(--gray-dark); margin-bottom:10px; text-align:center; }
+    .stat{ margin-bottom:10px; text-align:center; }
+    .label{ font-size:.85rem; color:var(--muted); }
+    .value{ font-size:2.5rem; font-weight:800; color:var(--green); } /* Zähler grün */
+    .value-stage{ font-size:1.4rem; color:var(--yellow); font-weight:700; text-transform:uppercase; }
+    .feedback{ min-height:24px; font-size:.9rem; color:var(--gray-dark); font-weight:600; text-align:center; margin-top:6px; }
+
+    .btn{ width:100%; border:none; border-radius:8px; padding:8px; font-weight:700; cursor:pointer; font-size:.9rem;
+          background:var(--gray); color:#fff; transition:background .15s, transform .1s; margin-top:8px; }
+    .btn:hover{ background:var(--gray-dark); } .btn:active{ transform:translateY(1px); }
+    .btn--green{ background:var(--green); } .btn--green:hover{ background:var(--green-dark); }
+
+    .debug{ font-size:.75rem; color:var(--muted); text-align:center; margin-top:6px; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 class="title">AI Squat Counter</h1>
+    <p class="subtitle">Stell dich seitlich vor die Kamera.</p>
+
+    <div class="card">
+      <!-- Loading -->
+      <div id="loading" class="loader-wrap">
+        <div class="loader"></div>
+        <div>
+          <div id="loading-message"><strong>Modell wird geladen…</strong></div>
+          <div id="backend-info" class="debug"></div>
+        </div>
+      </div>
+
+      <!-- App -->
+      <div id="app" style="display:none;">
+        <div class="layout">
+          <!-- Kamera + Canvas -->
+          <div class="stage" id="canvas-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+          </div>
+
+          <!-- Status -->
+          <div class="panel">
+            <h2>Status</h2>
+
+            <div class="stat">
+              <p class="label">Count</p>
+              <p id="count" class="value">0</p>
+            </div>
+
+            <div class="stat">
+              <p class="label">Stage</p>
+              <p id="stage" class="value-stage">-</p>
+            </div>
+
+            <div class="stat">
+              <p class="label">Feedback</p>
+              <p id="feedback" class="feedback">Initialisiere…</p>
+            </div>
+
+            <button id="reset-button" class="btn">Reset</button>
+            <button id="finish-button" class="btn btn--green">Fertig</button>
+
+            <div id="debug-log" class="debug"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TFJS + Backends -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+  <script>
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const countEl = document.getElementById('count');
+    const stageEl = document.getElementById('stage');
+    const feedbackEl = document.getElementById('feedback');
+
+    const loadingWrap = document.getElementById('loading');
+    const appWrap = document.getElementById('app');
+    const loadingMsg = document.getElementById('loading-message');
+    const backendInfo = document.getElementById('backend-info');
+    const debugLog = document.getElementById('debug-log');
+
+    let detector;
+    let counter = 0;
+    let stage = "up"; // up = stehen, down = unten
+
+    function angle(a,b,c){
+      const r=Math.atan2(c.y-b.y,c.x-b.x)-Math.atan2(a.y-b.y,a.x-b.x);
+      let d=Math.abs(r*180/Math.PI);
+      if(d>180)d=360-d;
+      return d;
+    }
+
+    async function initBackend(){
+      try{ await tf.setBackend('webgl'); await tf.ready(); }
+      catch(e){ await tf.setBackend('cpu'); await tf.ready(); }
+      backendInfo.textContent = 'TFJS Backend: ' + tf.getBackend();
+    }
+
+    async function setupCamera(){
+      if(!navigator.mediaDevices?.getUserMedia) throw new Error('Camera not supported by this browser.');
+      const stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});
+      video.srcObject = stream;
+      return new Promise(res => video.onloadedmetadata = () => res());
+    }
+
+    async function loadModel(){
+      const model = poseDetection.SupportedModels.MoveNet;
+      const cfg = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+      detector = await poseDetection.createDetector(model, cfg);
+    }
+
+    function drawKeypoints(pose){
+      for(const kp of pose.keypoints){
+        if(kp.score>0.5){
+          ctx.beginPath();
+          ctx.arc(kp.x,kp.y,4,0,2*Math.PI);
+          ctx.fillStyle = "#6b7280";
+          ctx.fill();
+        }
+      }
+    }
+    function drawSkeleton(pose){
+      const pairs = poseDetection.util.getAdjacentPairs(poseDetection.SupportedModels.MoveNet);
+      ctx.strokeStyle = "#6b7280"; ctx.lineWidth = 2;
+      pairs.forEach(([a,b])=>{
+        const k1=pose.keypoints[a], k2=pose.keypoints[b];
+        if(k1.score>0.5 && k2.score>0.5){
+          ctx.beginPath(); ctx.moveTo(k1.x,k1.y); ctx.lineTo(k2.x,k2.y); ctx.stroke();
+        }
+      });
+    }
+
+    function pickSide(kps,name){
+      const l=kps.find(k=>k.name===`left_${name}`);
+      const r=kps.find(k=>k.name===`right_${name}`);
+      return ((l?.score||0)>=(r?.score||0))?l:r;
+    }
+
+    function processSquat(pose){
+      const k = pose.keypoints;
+
+      // Nimm die Seite mit höherer Confidence
+      const hip   = pickSide(k,'hip');
+      const knee  = pickSide(k,'knee');
+      const ankle = pickSide(k,'ankle');
+
+      if(!(hip?.score>0.5 && knee?.score>0.5 && ankle?.score>0.5)){
+        feedbackEl.textContent = "Stell dich seitlich hin.";
+        stageEl.textContent = "-";
+        return;
+      }
+
+      const kneeAngle = angle(hip, knee, ankle);
+
+      if(kneeAngle > 160){ // oben/gestreckt
+        if(stage === "down"){
+          counter++;
+          feedbackEl.textContent = "Sauber!";
+        }
+        stage = "up";
+      } else if(kneeAngle < 90){ // tief unten
+        stage = "down";
+        feedbackEl.textContent = "Geh tief!";
+      }
+
+      countEl.textContent = counter;
+      stageEl.textContent = stage.toUpperCase();
+    }
+
+    async function loop(){
+      if(!detector || video.readyState !== 4){ requestAnimationFrame(loop); return; }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      try{
+        const poses = await detector.estimatePoses(video);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        if(poses.length>0){
+          const pose = poses[0];
+          drawSkeleton(pose);
+          drawKeypoints(pose);
+          processSquat(pose);
+        }
+      }catch(err){
+        debugLog.textContent = 'Fehler: ' + err.message;
+      }
+      requestAnimationFrame(loop);
+    }
+
+    document.getElementById("reset-button").addEventListener("click", () => {
+      counter = 0; stage = "up";
+      countEl.textContent = 0; stageEl.textContent = "-";
+      feedbackEl.textContent = "Zurückgesetzt!";
+    });
+
+    document.getElementById("finish-button").addEventListener("click", () => {
+      localStorage.setItem("squats_total", counter);
+      // Zielseite ggf. anpassen (ohne Leerzeichen/Umlaute empfohlen)
+      window.location.href = "dailychallenge.html";
+    });
+
+    async function main(){
+      try{
+        await initBackend();
+        const msg = document.getElementById('loading-message');
+        msg.textContent = "Bitte Kamera erlauben…";
+        await setupCamera();
+        msg.textContent = "Modell lädt…";
+        await loadModel();
+      }catch(e){
+        document.getElementById('loading-message').textContent = "Fehler: " + e.message;
+        document.getElementById('loading-message').style.color = "crimson";
+        return;
+      }
+      loadingWrap.style.display = "none";
+      appWrap.style.display = "block";
+      feedbackEl.textContent = "Bereit!";
+      loop();
+    }
+    main();
+  </script>
+</body>
+</html>
+

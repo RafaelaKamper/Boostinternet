@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Exporte</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .summary { font-weight:600; margin-bottom:12px }
+
+    /* Container-Breite moderat halten */
+    .container { max-width:880px; }
+
+    table { width:100%; border-collapse:collapse; margin-top:8px; table-layout: auto; }
+    th, td {
+      text-align:left;
+      padding:8px;
+      border-bottom:1px solid #e6e6e6;
+      font-size:0.95rem;
+      font-family: inherit;
+      color: inherit;
+      vertical-align: middle;
+    }
+    th { background:#f3f4f6; font-weight:600; white-space:nowrap; }
+    .small { font-size:0.85rem; color:#6b7280 }
+
+    /* Ermöglicht horizontales Scrollen bei kleinen Bildschirmen */
+    #tableWrap { overflow-x:auto; }
+
+    /* Zellen sollen weiß wirken */
+    #regTable tbody td { background:#ffffff; }
+
+    /* Alle Tabellenfelder standardmäßig 5cm, aber Schulform und Klasse 2cm */
+    #regTable th:nth-child(1), #regTable td:nth-child(1),
+    #regTable th:nth-child(2), #regTable td:nth-child(2),
+    #regTable th:nth-child(3), #regTable td:nth-child(3),
+    #regTable th:nth-child(6), #regTable td:nth-child(6) {
+      min-width: 5cm;
+      width: 5cm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Schulform (4.) und Klasse (5.) auf 2cm setzen */
+    #regTable th:nth-child(4), #regTable td:nth-child(4),
+    #regTable th:nth-child(5), #regTable td:nth-child(5) {
+      min-width: 2cm;
+      width: 2cm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Admin — Exporte</h1>
+
+    <div class="summary" id="summary">Gesamtregistrierungen: <span id="count">—</span></div>
+
+    <div class="field">
+      <button id="downloadCsv" type="button">Export CSV</button>
+      <button id="downloadXlsx" type="button">Export XLSX</button>
+      <button id="refresh" type="button">Aktualisieren</button>
+    </div>
+
+    <div id="tableWrap" style="margin-top:12px">
+      <table id="regTable" aria-describedby="count">
+        <thead>
+          <tr>
+            <th>Vorname</th>
+            <th>Nachname</th>
+            <th>Schule</th>
+            <th>Schulform</th>
+            <th>Klasse</th>
+            <th>Registriert</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- rows werden dynamisch eingefügt -->
+        </tbody>
+      </table>
+      <p id="emptyMsg" class="small" style="display:none">Keine Registrierungen vorhanden.</p>
+    </div>
+
+    <p class="small">Hinweis: geschützter Bereich. Nicht an Schüler weitergeben.</p>
+  </main>
+
+  <script>
+    async function loadRegistrations() {
+      try {
+        const res = await fetch('/registrations.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('registrations.json nicht erreichbar: ' + res.status);
+        const list = await res.json();
+        renderTable(list || []);
+      } catch (err) {
+        document.getElementById('count').textContent = 'Fehler';
+        document.getElementById('emptyMsg').textContent = 'Fehler beim Laden: ' + err.message;
+        document.getElementById('emptyMsg').style.display = 'block';
+        console.error(err);
+      }
+    }
+
+    function renderTable(list) {
+      const tbody = document.querySelector('#regTable tbody');
+      tbody.innerHTML = '';
+      document.getElementById('count').textContent = list.length;
+      if (!list.length) {
+        document.getElementById('emptyMsg').style.display = 'block';
+        return;
+      } else {
+        document.getElementById('emptyMsg').style.display = 'none';
+      }
+
+      list.forEach(item => {
+        const tr = document.createElement('tr');
+        const ts = item.timestamp ? new Date(item.timestamp).toLocaleString('de-DE') : '';
+        tr.innerHTML = `
+          <td title="${escapeHtml(item.vorname)}">${escapeHtml(item.vorname)}</td>
+          <td title="${escapeHtml(item.nachname)}">${escapeHtml(item.nachname)}</td>
+          <td title="${escapeHtml(item.schule)}">${escapeHtml(item.schule)}</td>
+          <td title="${escapeHtml(item.schulform)}">${escapeHtml(item.schulform)}</td>
+          <td title="${escapeHtml(item.klasse)}">${escapeHtml(item.klasse)}</td>
+          <td title="${escapeHtml(ts)}">${escapeHtml(ts)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(s) {
+      if (s === undefined || s === null) return '';
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+    }
+
+    document.getElementById('downloadCsv').addEventListener('click', () => {
+      window.location.href = '/export.csv';
+    });
+    document.getElementById('downloadXlsx').addEventListener('click', () => {
+      window.location.href = '/export.xlsx';
+    });
+    document.getElementById('refresh').addEventListener('click', loadRegistrations);
+
+    document.addEventListener('DOMContentLoaded', loadRegistrations);
+  </script>
+</body>
+</html>

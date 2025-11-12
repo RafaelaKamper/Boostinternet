@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tägliche Challenge</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+        }
+
+        .exercise-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: #e5e5e5;
+            font-weight: 600;
+            transition: 0.2s;
+            color: #111;
+        }
+
+        .exercise-btn:hover {
+            background: hsl(142 76% 46%);
+            color: white;
+        }
+
+        .primary {
+            color: hsl(142 76% 46%);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center p-6">
+
+    <!-- DASHBOARD HEADER -->
+    <header class="w-full max-w-5xl flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl shadow-md px-6 py-5 mb-10">
+        <div>
+            <p class="text-sm text-gray-500 dashboard-school">Ursulinen - Admin</p>
+            <div class="flex items-center gap-4 flex-wrap">
+                <h1 class="text-3xl font-bold text-gray-900 dashboard-name">Rafaela</h1>
+                <div class="flex items-center gap-2 bg-lime-50 text-lime-600 font-semibold px-3 py-1 rounded-full">
+                    <img src="assets/flash.png" alt="Blitz Symbol" class="w-5 h-5">
+                    <span class="flash-count">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-5 mt-4 sm:mt-0">
+            <img src="assets/boost-logo.png" alt="Boost Logo" class="h-10 w-auto">
+            <button type="button" aria-label="Abmelden" class="text-gray-500 hover:text-gray-800 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l4.5 3-4.5 3M16.5 12H3" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+
+    <!-- CHALLENGE CARDS OVERVIEW -->
+    <section class="w-full max-w-5xl mb-12">
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Deine Challenges</h2>
+        <p class="text-gray-600 mb-6">Behalte alle aktiven Challenges im Blick und verfolge deinen Fortschritt.</p>
+
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <!-- Daily Challenge Card -->
+            <a href="dailychallenge.html" class="block focus:outline-none focus:ring-2 focus:ring-lime-400 rounded-2xl">
+                <article class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 transition-transform hover:-translate-y-1">
+                    <div class="relative">
+                        <img src="assets/challenge-daily.jpg" alt="Athletin bei der taeglichen Challenge" class="w-full h-44 object-cover">
+                        <div class="absolute inset-x-0 bottom-0 px-4 py-2 bg-black/60 text-white text-sm flex justify-between items-center">
+                            <span>Fortschritt</span>
+                            <span>0%</span>
+                        </div>
+                        <div class="absolute bottom-0 left-0 h-1 bg-lime-400" style="width: 0%;"></div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-sm uppercase tracking-wide text-gray-500 mb-1">Taegliche Challenge</p>
+                        <h3 class="text-lg font-semibold text-gray-900">Push-up Fokus</h3>
+                    </div>
+                </article>
+            </a>
+
+            <!-- Weekly Challenge Card -->
+            <article class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="relative">
+                    <img src="assets/challenge-weekly.jpg" alt="Person bei einer Wanderung fuer die Wochenchallenge" class="w-full h-44 object-cover">
+                    <div class="absolute inset-x-0 bottom-0 px-4 py-2 bg-black/60 text-white text-sm flex justify-between items-center">
+                        <span>Fortschritt</span>
+                        <span>40%</span>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-lime-400" style="width: 40%;"></div>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm uppercase tracking-wide text-gray-500 mb-1">Wochenchallenge</p>
+                    <h3 class="text-lg font-semibold text-gray-900">Berglauf-Session</h3>
+                </div>
+            </article>
+
+            <!-- Friendquest Card -->
+            <article class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="relative">
+                    <img src="assets/challenge-friend.jpg" alt="Teamwork bei der Friendquest Challenge" class="w-full h-44 object-cover">
+                    <div class="absolute inset-x-0 bottom-0 px-4 py-2 bg-black/60 text-white text-sm flex justify-between items-center">
+                        <span>Fortschritt</span>
+                        <span>100%</span>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-lime-400" style="width: 100%;"></div>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm uppercase tracking-wide text-gray-500 mb-1">Friendquest</p>
+                    <h3 class="text-lg font-semibold text-gray-900">Buddy Workout</h3>
+                </div>
+            </article>
+
+            <!-- Try It Card -->
+            <article class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="relative">
+                    <img src="assets/challenge-tryit.jpg" alt="Jugendliche beim Try It Fussballtraining" class="w-full h-44 object-cover">
+                    <div class="absolute inset-x-0 bottom-0 px-4 py-2 bg-black/60 text-white text-sm flex justify-between items-center">
+                        <span>Fortschritt</span>
+                        <span>0%</span>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 bg-lime-400" style="width: 0%;"></div>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm uppercase tracking-wide text-gray-500 mb-1">Try It</p>
+                    <h3 class="text-lg font-semibold text-gray-900">Soccer Skills</h3>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const userName = localStorage.getItem("user_name") || "Rafaela";
+            const schoolName = localStorage.getItem("school_name") || "Ursulinen - Admin";
+            const flashCount = localStorage.getItem("flash_total") || 0;
+
+            const schoolEl = document.querySelector(".dashboard-school");
+            const nameEl = document.querySelector(".dashboard-name");
+            const flashEl = document.querySelector(".flash-count");
+
+            if (schoolEl) schoolEl.textContent = schoolName;
+            if (nameEl) {
+                const firstName = userName.trim().split(/\s+/)[0] || userName;
+                nameEl.textContent = firstName;
+            }
+            if (flashEl) flashEl.textContent = flashCount;
+        });
+    </script>
+
+</body>
+</html>
+
+
