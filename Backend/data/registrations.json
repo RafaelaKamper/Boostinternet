@@ -30,5 +30,21 @@
     "schulform": "GYM",
     "klasse": "4a",
     "timestamp": "2025-10-31T20:03:38.254Z"
+  },
+  {
+    "vorname": "Max",
+    "nachname": "Mustermann",
+    "schule": "LerneViel",
+    "schulform": "AHS",
+    "klasse": "9b",
+    "timestamp": "2025-11-12T18:50:26.547Z"
+  },
+  {
+    "vorname": "sofia",
+    "nachname": "kamper",
+    "schule": "Ursulinen",
+    "schulform": "AHS",
+    "klasse": "3e",
+    "timestamp": "2025-11-13T18:51:13.618Z"
   }
 ]

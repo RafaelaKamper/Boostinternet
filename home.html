@@ -49,7 +49,7 @@
         </div>
         <div class="flex items-center gap-5 mt-4 sm:mt-0">
             <img src="assets/boost-logo.png" alt="Boost Logo" class="h-10 w-auto">
-            <button type="button" aria-label="Abmelden" class="text-gray-500 hover:text-gray-800 transition-colors">
+            <button type="button" aria-label="Abmelden" id="logoutButton" class="text-gray-500 hover:text-gray-800 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l4.5 3-4.5 3M16.5 12H3" />
                 </svg>
@@ -137,6 +137,7 @@
             const userName = localStorage.getItem("user_name") || "Rafaela";
             const schoolName = localStorage.getItem("school_name") || "Ursulinen - Admin";
             const flashCount = localStorage.getItem("flash_total") || 0;
+            const logoutBtn = document.getElementById("logoutButton");
 
             const schoolEl = document.querySelector(".dashboard-school");
             const nameEl = document.querySelector(".dashboard-name");
@@ -148,6 +149,20 @@
                 nameEl.textContent = firstName;
             }
             if (flashEl) flashEl.textContent = flashCount;
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", () => {
+                    try {
+                        localStorage.clear();
+                        if (typeof sessionStorage !== "undefined" && sessionStorage) {
+                            sessionStorage.clear();
+                        }
+                    } catch (err) {
+                        console.warn("Konnte LocalStorage nicht leeren:", err);
+                    }
+                    window.location.href = "index.html";
+                });
+            }
         });
     </script>
 
