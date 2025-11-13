@@ -1,6 +1,8 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const PORT = process.env.PORT || 3000;
+
 
 let ExcelJS = null;
 try {
@@ -137,3 +139,4 @@ app.get('/export.xlsx', adminAuth, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server läuft: http://localhost:${PORT}`);
 });
+
