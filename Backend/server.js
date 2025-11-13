@@ -12,7 +12,6 @@ try {
 }
 
 const app = express();
-const PORT = 3000;
 const ROOT_DIR = path.join(__dirname, '..');
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'registrations.json');
