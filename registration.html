@@ -83,52 +83,46 @@
     </section>
   </main>
 
-  <script>
+    <script>
     const form = document.getElementById("registrationForm");
     const messageEl = document.getElementById("message");
 
-    // Absoluter Pfad: für lokal (php -S) ist /api/... korrekt.
-    // Wenn du später online in einem Unterordner /app/ liegst, ändere auf "/app/api/save_registration.php"
-    function showMessage(msg, ok=true){
+    function showMessage(msg, ok = true) {
       messageEl.textContent = msg;
       messageEl.className = ok ? "msg-ok" : "msg-err";
     }
 
+    // Eingabefelder bei Tippen wieder "normal" einfärben
     ["vorname","nachname","schule","schulform","klasse"].forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener("input", () => { el.style.borderColor = "#e5e7eb"; });
+      el.addEventListener("input", () => {
+        el.style.borderColor = "#e5e7eb";
+      });
     });
 
     async function submitRegistration(data) {
-      const endpoints = ["/register", "Backend/api/save_registration.php"];
-      let lastError = null;
+      const url = "https://boostinternet.onrender.com/register";
 
-      for (const url of endpoints) {
-        try {
-          const res  = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-          });
-          const text = await res.text();
-          const isJson = (res.headers.get("content-type")||"").includes("application/json");
-          const payload = (isJson && text.trim()) ? JSON.parse(text) : null;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
 
-          if (!res.ok || (payload && payload.ok !== true && payload.success !== true)) {
-            if (res.status === 404 || res.status === 405) throw { retry: true };
-            const serverMsg = payload?.error || text.slice(0,300) || `HTTP ${res.status}`;
-            throw new Error(serverMsg);
-          }
-          return payload || { ok: true };
-        } catch (err) {
-          if (err && err.retry) {
-            lastError = new Error(`Endpoint ${url} nicht verfügbar`);
-            continue;
-          }
-          lastError = err instanceof Error ? err : new Error(String(err));
+        const text = await res.text();
+        const isJson = (res.headers.get("content-type") || "").includes("application/json");
+        const payload = (isJson && text.trim()) ? JSON.parse(text) : null;
+
+        if (!res.ok || (payload && payload.ok !== true && payload.success !== true)) {
+          const serverMsg = payload?.error || text.slice(0, 300) || `HTTP ${res.status}`;
+          throw new Error(serverMsg);
         }
+
+        return payload || { ok: true };
+      } catch (err) {
+        throw err instanceof Error ? err : new Error(String(err));
       }
-      throw lastError || new Error("Registrierung fehlgeschlagen");
     }
 
     form.addEventListener("submit", async (e) => {
@@ -136,22 +130,29 @@
 
       const fields = ["vorname","nachname","schule","schulform","klasse"];
       const submitBtn = form.querySelector('button[type="submit"]');
-      let valid = true, data = {};
+      let valid = true;
+      const data = {};
 
       fields.forEach(id => {
         const el = document.getElementById(id);
         const v  = el.value.trim();
-        if (!v) { valid = false; el.style.borderColor = "#dc2626"; }
-        else { el.style.borderColor = "#e5e7eb"; data[id] = v; }
+        if (!v) {
+          valid = false;
+          el.style.borderColor = "#dc2626";
+        } else {
+          el.style.borderColor = "#e5e7eb";
+          data[id] = v;
+        }
       });
 
-      if (!valid) { showMessage("Bitte fülle alle Felder aus.", false); return; }
+      if (!valid) {
+        showMessage("Bitte fülle alle Felder aus.", false);
+        return;
+      }
 
       submitBtn.disabled = true;
       submitBtn.style.filter = "brightness(0.9)";
-
-      // KEIN JSON → vermeidet Preflight/OPTIONS → weniger 405-Risiko
-      const body = new URLSearchParams(data).toString();
+      showMessage("Sende Daten...", true);
 
       try {
         await submitRegistration(data);
@@ -162,7 +163,7 @@
         return;
       }
 
-      // lokal für die Übersicht speichern
+      // lokal für die Challenge-Seiten speichern
       localStorage.setItem("user_name", data.vorname);
       localStorage.setItem("last_name", data.nachname);
       localStorage.setItem("school_name", data.schule);
@@ -172,10 +173,13 @@
         localStorage.setItem("flash_total", "0");
       }
 
-      showMessage("Anmeldung erfolgreich! Weiterleitung...", true);
-      setTimeout(() => { window.location.href = "home.html"; }, 800);
+      showMessage("Anmeldung erfolgreich! Du wirst weitergeleitet...", true);
+      setTimeout(() => {
+        window.location.href = "home.html";
+      }, 800);
     });
   </script>
+
 </body>
 </html>
 
