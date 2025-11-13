@@ -1,7 +1,10 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors');
 const PORT = process.env.PORT || 3000;
+
+
 
 
 let ExcelJS = null;
@@ -12,6 +15,8 @@ try {
 }
 
 const app = express();
+app.use(cors());
+
 const ROOT_DIR = path.join(__dirname, '..');
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'registrations.json');
